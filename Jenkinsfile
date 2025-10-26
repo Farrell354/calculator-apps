@@ -16,9 +16,41 @@ pipeline {
             }
         }
 
+        stage('Install SDK Command-line Tools') {
+            steps {
+                script {
+                    def sdkZip = "${env.WORKSPACE}\\commandlinetools.zip"
+                    def sdkLatest = "${env.ANDROID_SDK_DIR}\\cmdline-tools\\latest"
+
+                    bat "if not exist \"${sdkLatest}\" mkdir \"${sdkLatest}\""
+
+                    // Download jika belum ada
+                    bat """
+                    if not exist "${sdkZip}" (
+                        powershell -Command "Invoke-WebRequest -Uri 'https://dl.google.com/android/repository/commandlinetools-win-9477386_latest.zip' -OutFile '${sdkZip}'"
+                    )
+                    """
+
+                    // Extract ke temporary folder
+                    def tempExtract = "${env.WORKSPACE}\\temp_sdk"
+                    bat "if exist \"${tempExtract}\" rmdir /s /q \"${tempExtract}\""
+                    bat "mkdir \"${tempExtract}\""
+                    bat """
+                    powershell -Command "Expand-Archive -Path '${sdkZip}' -DestinationPath '${tempExtract}' -Force"
+                    """
+
+                    // Pindahkan isi cmdline-tools ke folder latest (hilangkan nested)
+                    bat """
+                    xcopy /E /I /Y "${tempExtract}\\cmdline-tools\\*" "${sdkLatest}"
+                    rmdir /S /Q "${tempExtract}"
+                    """
+                }
+            }
+        }
+
         stage('Accept SDK Licenses') {
             steps {
-                bat "\"${ANDROID_SDK_DIR}\\cmdline-tools\\latest\\tools\\bin\\sdkmanager.bat\" --licenses --verbose"
+                bat "\"${env.ANDROID_SDK_DIR}\\cmdline-tools\\latest\\bin\\sdkmanager.bat\" --licenses --verbose"
             }
         }
 
@@ -44,8 +76,3 @@ pipeline {
         }
     }
 }
-
-
-
-
-
