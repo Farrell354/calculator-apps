@@ -12,28 +12,31 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                echo 'Checkout kode dari GitHub...'
-                git branch: 'main',
-                    credentialsId: "${GIT_CREDENTIALS_ID}",
-                    url: "${GIT_REPO}"
+                git branch: 'main', credentialsId: "${GIT_CREDENTIALS_ID}", url: "${GIT_REPO}"
             }
         }
 
         stage('Install SDK Command-line Tools') {
             steps {
                 script {
-                    def sdkToolsZip = "${env.WORKSPACE}\\commandlinetools.zip"
-                    // Cek apakah SDK folder ada
-                    if (!fileExists("${env.ANDROID_SDK_DIR}\\cmdline-tools\\latest")) {
-                        echo 'SDK command-line tools tidak ditemukan. Mengunduh...'
-                        bat """
-                        powershell -Command "Invoke-WebRequest -Uri https://dl.google.com/android/repository/commandlinetools-win-9477386_latest.zip -OutFile ${sdkToolsZip}"
-                        mkdir "${env.ANDROID_SDK_DIR}\\cmdline-tools\\latest"
-                        powershell -Command "Expand-Archive -Path ${sdkToolsZip} -DestinationPath ${env.ANDROID_SDK_DIR}\\cmdline-tools\\latest"
-                        """
-                    } else {
-                        echo 'SDK command-line tools sudah ada.'
-                    }
+                    def sdkZipPath = "${env.WORKSPACE}\\commandlinetools.zip"
+                    def sdkExtractPath = "${env.ANDROID_SDK_DIR}\\cmdline-tools\\latest"
+
+                    // Buat folder SDK jika belum ada
+                    bat "if not exist \"${env.ANDROID_SDK_DIR}\" mkdir \"${env.ANDROID_SDK_DIR}\""
+                    bat "if not exist \"${sdkExtractPath}\" mkdir \"${sdkExtractPath}\""
+
+                    // Download command-line tools jika belum ada
+                    bat """
+                    if not exist "${sdkZipPath}" (
+                        powershell -Command "Invoke-WebRequest -Uri 'https://dl.google.com/android/repository/commandlinetools-win-9477386_latest.zip' -OutFile '${sdkZipPath}'"
+                    )
+                    """
+
+                    // Extract ZIP dengan path aman
+                    bat """
+                    powershell -Command "Expand-Archive -Path '${sdkZipPath}' -DestinationPath '${sdkExtractPath}' -Force"
+                    """
                 }
             }
         }
@@ -41,14 +44,13 @@ pipeline {
         stage('Accept SDK Licenses') {
             steps {
                 bat """
-                echo y | "%ANDROID_SDK_DIR%\\cmdline-tools\\latest\\bin\\sdkmanager.bat" --licenses
+                echo y | "${env.ANDROID_SDK_DIR}\\cmdline-tools\\latest\\bin\\sdkmanager.bat" --licenses
                 """
             }
         }
 
         stage('Build APK') {
             steps {
-                echo 'Build APK dimulai...'
                 bat "gradlew.bat clean assembleDebug --refresh-dependencies --stacktrace --info"
             }
         }
@@ -65,8 +67,9 @@ pipeline {
             echo 'Build APK berhasil!'
         }
         failure {
-            echo 'Build APK gagal. Cek log untuk detail.'
+            echo 'Build APK gagal. Periksa log Jenkins untuk detail.'
         }
     }
 }
+
 
