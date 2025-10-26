@@ -43,11 +43,17 @@ pipeline {
                     powershell -Command "Expand-Archive -Path '${sdkZipPath}' -DestinationPath '${tempExtract}' -Force"
                     """
 
+                    // Debug: tampilkan isi folder temp
+                    bat "dir \"${tempExtract}\" /s /b"
+
                     // Pindahkan folder cmdline-tools ke sdkExtractPath
                     bat """
                     xcopy /E /I /Y "${tempExtract}\\cmdline-tools" "${sdkExtractPath}"
                     rmdir /S /Q "${tempExtract}"
                     """
+
+                    // Debug: tampilkan isi folder SDK
+                    bat "dir \"${sdkExtractPath}\" /s /b"
 
                     // Deteksi lokasi sdkmanager.bat
                     def sdkManagerCandidates = ["${sdkExtractPath}\\tools\\bin\\sdkmanager.bat",
@@ -59,7 +65,10 @@ pipeline {
                         }
                     }
 
-                    if (!env.SDKMANAGER_PATH) {
+                    // Debug: cetak path sdkmanager
+                    if (env.SDKMANAGER_PATH) {
+                        echo "Detected sdkmanager.bat at: ${env.SDKMANAGER_PATH}"
+                    } else {
                         error "sdkmanager.bat tidak ditemukan di folder SDK!"
                     }
                 }
@@ -74,6 +83,11 @@ pipeline {
 
         stage('Build APK') {
             steps {
+                // Debug: tampilkan environment variables
+                bat "echo ANDROID_SDK_DIR=%ANDROID_SDK_DIR%"
+                bat "echo JAVA_HOME=%JAVA_HOME%"
+                bat "echo PATH=%PATH%"
+                
                 bat "gradlew.bat clean assembleDebug --refresh-dependencies --stacktrace --info"
             }
         }
@@ -94,4 +108,5 @@ pipeline {
         }
     }
 }
+
 
