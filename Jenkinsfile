@@ -2,36 +2,44 @@ pipeline {
     agent any
 
     environment {
-        // Repo GitHub
         GIT_REPO = 'https://github.com/Farrell354/calculator-apps.git'
-        GIT_CREDENTIALS_ID = 'github-pat-credential' // Pastikan sudah dibuat di Jenkins
-
-        // Android SDK dan Java
+        GIT_CREDENTIALS_ID = 'github-pat-credential'
         ANDROID_HOME = 'C:\\Users\\Farrel\\AppData\\Local\\Android\\Sdk'
         JAVA_HOME = 'C:\\Program Files\\Android\\Android Studio\\jbr'
-        PATH = "${env.ANDROID_HOME}\\cmdline-tools\\latest\\bin;${env.ANDROID_HOME}\\platform-tools;${env.JAVA_HOME}\\bin;${env.PATH}"
+        PATH = "${env.ANDROID_HOME}\\cmdline-tools\\latest\\bin;${env.ANDROID_HOME}\\platform-tools;${env.PATH}"
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        timestamps()
     }
 
     stages {
         stage('Checkout') {
             steps {
-                echo "Checkout source code dari GitHub..."
                 git branch: 'main',
                     credentialsId: "${GIT_CREDENTIALS_ID}",
                     url: "${GIT_REPO}"
             }
         }
 
+        stage('Accept SDK Licenses') {
+            steps {
+                echo "Memastikan semua lisensi SDK diterima..."
+                bat "\"${env.ANDROID_HOME}\\cmdline-tools\\latest\\bin\\sdkmanager.bat\" --licenses --quiet || exit 0"
+            }
+        }
+
         stage('Build APK') {
             steps {
                 echo "Mulai build APK..."
-                bat '.\\gradlew.bat clean assembleDebug --stacktrace --info'
+                bat 'gradlew.bat clean assembleDebug'
             }
         }
 
         stage('Archive APK') {
             steps {
-                echo "Archive hasil APK..."
+                echo "Archiving APK..."
                 archiveArtifacts artifacts: 'app\\build\\outputs\\apk\\debug\\*.apk', allowEmptyArchive: false
             }
         }
@@ -39,11 +47,12 @@ pipeline {
 
     post {
         success {
-            echo '✅ Build APK berhasil!'
+            echo '✅ Build APK berhasil! APK bisa di-download di Jenkins artifacts.'
         }
         failure {
-            echo '❌ Build APK gagal. Periksa log di atas untuk detail.'
+            echo '❌ Build APK gagal! Cek log untuk detail error.'
         }
     }
 }
+
 
