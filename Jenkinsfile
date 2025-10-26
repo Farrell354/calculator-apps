@@ -6,12 +6,7 @@ pipeline {
         GIT_CREDENTIALS_ID = 'github-pat-credential'
         ANDROID_HOME = 'C:\\Users\\Farrel\\AppData\\Local\\Android\\Sdk'
         JAVA_HOME = 'C:\\Program Files\\Android\\Android Studio\\jbr'
-        PATH = "${env.ANDROID_HOME}\\cmdline-tools\\latest\\bin;${env.ANDROID_HOME}\\platform-tools;${env.PATH}"
-    }
-
-    options {
-        timeout(time: 30, unit: 'MINUTES')
-        timestamps()
+        PATH = "${env.ANDROID_HOME}\\cmdline-tools\\latest\\bin;${env.ANDROID_HOME}\\platform-tools;${env.JAVA_HOME}\\bin;%PATH%"
     }
 
     stages {
@@ -25,34 +20,30 @@ pipeline {
 
         stage('Accept SDK Licenses') {
             steps {
-                echo "Memastikan semua lisensi SDK diterima..."
-                bat "\"${env.ANDROID_HOME}\\cmdline-tools\\latest\\bin\\sdkmanager.bat\" --licenses --quiet || exit 0"
+                bat "\"%ANDROID_HOME%\\cmdline-tools\\latest\\bin\\sdkmanager.bat\" --licenses --quiet || exit 0"
             }
         }
 
         stage('Build APK') {
             steps {
-                echo "Mulai build APK..."
-                bat 'gradlew.bat clean assembleDebug'
+                echo 'Mulai build APK...'
+                bat "\"gradlew.bat\" clean assembleDebug --refresh-dependencies"
             }
         }
 
         stage('Archive APK') {
             steps {
-                echo "Archiving APK..."
-                archiveArtifacts artifacts: 'app\\build\\outputs\\apk\\debug\\*.apk', allowEmptyArchive: false
+                archiveArtifacts artifacts: 'app\\build\\outputs\\apk\\debug\\*.apk', allowEmptyArchive: true
             }
         }
     }
 
     post {
         success {
-            echo '✅ Build APK berhasil! APK bisa di-download di Jenkins artifacts.'
+            echo 'Build APK berhasil!'
         }
         failure {
-            echo '❌ Build APK gagal! Cek log untuk detail error.'
+            echo 'Build APK gagal!'
         }
     }
 }
-
-
