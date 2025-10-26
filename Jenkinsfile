@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         GIT_REPO = 'https://github.com/Farrell354/calculator-apps.git'
-        GIT_CREDENTIALS_ID = 'github-pat-credential'
+        GIT_CREDENTIALS_ID = 'github-pat-credential' // ganti dengan ID credential Jenkins PAT GitHub kamu
         ANDROID_HOME = 'C:\\Users\\Farrel\\AppData\\Local\\Android\\Sdk'
         JAVA_HOME = 'C:\\Program Files\\Android\\Android Studio\\jbr'
         PATH = "${env.ANDROID_HOME}\\cmdline-tools\\latest\\bin;${env.ANDROID_HOME}\\platform-tools;${env.PATH}"
@@ -22,7 +22,6 @@ pipeline {
         stage('Build APK') {
             steps {
                 echo 'Mulai build APK...'
-                // Jalankan gradlew.bat dari workspace penuh
                 bat "\"${WORKSPACE}\\gradlew.bat\" clean assembleDebug --refresh-dependencies --stacktrace --info"
             }
         }
