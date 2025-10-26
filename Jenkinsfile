@@ -6,33 +6,30 @@ pipeline {
         GIT_CREDENTIALS_ID = 'github-pat-credential'
         ANDROID_HOME = 'C:\\Users\\Farrel\\AppData\\Local\\Android\\Sdk'
         JAVA_HOME = 'C:\\Program Files\\Android\\Android Studio\\jbr'
-        PATH = "${env.ANDROID_HOME}\\cmdline-tools\\latest\\bin;${env.ANDROID_HOME}\\platform-tools;${env.JAVA_HOME}\\bin;%PATH%"
+        PATH = "${env.ANDROID_HOME}\\cmdline-tools\\latest\\bin;${env.ANDROID_HOME}\\platform-tools;${env.PATH}"
     }
 
     stages {
         stage('Checkout') {
             steps {
+                echo "Checkout repository..."
                 git branch: 'main',
                     credentialsId: "${GIT_CREDENTIALS_ID}",
                     url: "${GIT_REPO}"
             }
         }
 
-        stage('Accept SDK Licenses') {
-            steps {
-                bat "\"%ANDROID_HOME%\\cmdline-tools\\latest\\bin\\sdkmanager.bat\" --licenses --quiet || exit 0"
-            }
-        }
-
         stage('Build APK') {
             steps {
-                echo 'Mulai build APK...'
-                bat "\"gradlew.bat\" clean assembleDebug --refresh-dependencies"
+                echo "Mulai build APK..."
+                // Tambahkan --stacktrace dan --info untuk log lengkap
+                bat "\"gradlew.bat\" clean assembleDebug --refresh-dependencies --stacktrace --info"
             }
         }
 
         stage('Archive APK') {
             steps {
+                echo "Archive APK hasil build..."
                 archiveArtifacts artifacts: 'app\\build\\outputs\\apk\\debug\\*.apk', allowEmptyArchive: true
             }
         }
@@ -40,10 +37,11 @@ pipeline {
 
     post {
         success {
-            echo 'Build APK berhasil!'
+            echo 'Build berhasil!'
         }
         failure {
-            echo 'Build APK gagal!'
+            echo 'Build gagal! Cek log Gradle di atas untuk penyebabnya.'
         }
     }
 }
+
