@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo "Checkout repository..."
+                echo 'Mulai checkout repository...'
                 git branch: 'main',
                     credentialsId: "${GIT_CREDENTIALS_ID}",
                     url: "${GIT_REPO}"
@@ -21,27 +21,26 @@ pipeline {
 
         stage('Build APK') {
             steps {
-                echo "Mulai build APK..."
-                // Tambahkan --stacktrace dan --info untuk log lengkap
-                bat "\"gradlew.bat\" clean assembleDebug --refresh-dependencies --stacktrace --info"
+                echo 'Mulai build APK...'
+                // Jalankan gradlew.bat dari workspace penuh
+                bat "\"${WORKSPACE}\\gradlew.bat\" clean assembleDebug --refresh-dependencies --stacktrace --info"
             }
         }
 
         stage('Archive APK') {
             steps {
-                echo "Archive APK hasil build..."
-                archiveArtifacts artifacts: 'app\\build\\outputs\\apk\\debug\\*.apk', allowEmptyArchive: true
+                echo 'Archive APK hasil build...'
+                archiveArtifacts artifacts: 'app\\build\\outputs\\apk\\debug\\*.apk', allowEmptyArchive: false
             }
         }
     }
 
     post {
         success {
-            echo 'Build berhasil!'
+            echo 'Build APK berhasil!'
         }
         failure {
-            echo 'Build gagal! Cek log Gradle di atas untuk penyebabnya.'
+            echo 'Build APK gagal. Periksa log Gradle untuk detail.'
         }
     }
 }
-
