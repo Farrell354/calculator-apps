@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/username/calculator.git'
+                git branch: 'main', url: 'https://github.com/Farrell354/calculator-apps.git'
             }
         }
 
