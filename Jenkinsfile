@@ -6,13 +6,15 @@ pipeline {
         GIT_CREDENTIALS_ID = 'github-pat-credential'
         ANDROID_SDK_DIR = 'C:\\Android\\Sdk'
         JAVA_HOME = 'C:\\Program Files\\Android\\Android Studio\\jbr'
-        PATH = "${env.ANDROID_SDK_DIR}\\platform-tools;${env.PATH}"
+        PATH = "${env.ANDROID_SDK_DIR}\\cmdline-tools\\latest\\bin;${env.ANDROID_SDK_DIR}\\platform-tools;${env.PATH}"
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'main', credentialsId: "${GIT_CREDENTIALS_ID}", url: "${GIT_REPO}"
+                git branch: 'main', 
+                    credentialsId: "${GIT_CREDENTIALS_ID}", 
+                    url: "${GIT_REPO}"
             }
         }
 
@@ -33,29 +35,19 @@ pipeline {
                     )
                     """
 
-                    // Extract ZIP ke folder temporary
-                    def tempExtract = "${env.WORKSPACE}\\temp_sdk"
-                    bat "if exist \"${tempExtract}\" rmdir /s /q \"${tempExtract}\""
-                    bat "mkdir \"${tempExtract}\""
+                    // Extract ZIP dengan path aman
                     bat """
-                    powershell -Command "Expand-Archive -Path '${sdkZipPath}' -DestinationPath '${tempExtract}' -Force"
+                    powershell -Command "Expand-Archive -Path '${sdkZipPath}' -DestinationPath '${sdkExtractPath}' -Force"
                     """
-
-                    // Pindahkan isi folder cmdline-tools ke sdkExtractPath
-                    bat """
-                    xcopy /E /I /Y "${tempExtract}\\cmdline-tools" "${sdkExtractPath}"
-                    rmdir /S /Q "${tempExtract}"
-                    """
-
-                    // Set path sdkmanager.bat
-                    env.SDKMANAGER_PATH = "${sdkExtractPath}\\tools\\bin\\sdkmanager.bat"
                 }
             }
         }
 
         stage('Accept SDK Licenses') {
             steps {
-                bat "echo y | \"%SDKMANAGER_PATH%\" --licenses"
+                bat """
+                echo y | "${env.ANDROID_SDK_DIR}\\cmdline-tools\\latest\\bin\\sdkmanager.bat" --licenses
+                """
             }
         }
 
