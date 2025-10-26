@@ -6,7 +6,7 @@ pipeline {
         GIT_CREDENTIALS_ID = 'github-pat-credential'
         ANDROID_SDK_DIR = 'C:\\Android\\Sdk'
         JAVA_HOME = 'C:\\Program Files\\Android\\Android Studio\\jbr'
-        PATH = "${env.ANDROID_SDK_DIR}\\cmdline-tools\\latest\\bin;${env.ANDROID_SDK_DIR}\\platform-tools;${env.PATH}"
+        PATH = "${env.ANDROID_SDK_DIR}\\platform-tools;${env.PATH}"
     }
 
     stages {
@@ -33,19 +33,29 @@ pipeline {
                     )
                     """
 
-                    // Extract ZIP dengan path aman
+                    // Extract ZIP ke folder temporary
+                    def tempExtract = "${env.WORKSPACE}\\temp_sdk"
+                    bat "if exist \"${tempExtract}\" rmdir /s /q \"${tempExtract}\""
+                    bat "mkdir \"${tempExtract}\""
                     bat """
-                    powershell -Command "Expand-Archive -Path '${sdkZipPath}' -DestinationPath '${sdkExtractPath}' -Force"
+                    powershell -Command "Expand-Archive -Path '${sdkZipPath}' -DestinationPath '${tempExtract}' -Force"
                     """
+
+                    // Pindahkan isi folder cmdline-tools ke sdkExtractPath
+                    bat """
+                    xcopy /E /I /Y "${tempExtract}\\cmdline-tools" "${sdkExtractPath}"
+                    rmdir /S /Q "${tempExtract}"
+                    """
+
+                    // Set path sdkmanager.bat
+                    env.SDKMANAGER_PATH = "${sdkExtractPath}\\tools\\bin\\sdkmanager.bat"
                 }
             }
         }
 
         stage('Accept SDK Licenses') {
             steps {
-                bat """
-                echo y | "${env.ANDROID_SDK_DIR}\\cmdline-tools\\latest\\bin\\sdkmanager.bat" --licenses
-                """
+                bat "echo y | \"%SDKMANAGER_PATH%\" --licenses"
             }
         }
 
@@ -71,5 +81,3 @@ pipeline {
         }
     }
 }
-
-
